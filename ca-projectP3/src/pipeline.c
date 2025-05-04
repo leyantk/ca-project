@@ -2,25 +2,23 @@
 #include "processor.h"
 #include <stdio.h>
 
-// Update status flags after ALU operations
+
 static void update_flags(Processor *p, uint8_t result, uint8_t op1, uint8_t op2, Opcode op) {
-    // Zero flag
-    p->SREG = (result == 0) ? (p->SREG | FLAG_Z) : (p->SREG & ~FLAG_Z);
+    // Z and N always
+    if (result == 0)       p->SREG |= FLAG_Z;  else p->SREG &= ~FLAG_Z;
+    if (result & 0x80)     p->SREG |= FLAG_N;  else p->SREG &= ~FLAG_N;
 
-    // Negative flag (MSB)
-    p->SREG = (result & 0x80) ? (p->SREG | FLAG_N) : (p->SREG & ~FLAG_N);
-
-    // Carry/Overflow for arithmetic ops
+    // only ADD/SUB affect C, V, S
     if (op == OP_ADD || op == OP_SUB) {
-        uint16_t tmp = (op == OP_ADD) ? (op1 + op2) : (op1 - op2);
-        // Carry (bit 8)
-        p->SREG = (tmp > 0xFF) ? (p->SREG | FLAG_C) : (p->SREG & ~FLAG_C);
-        // Overflow (XOR last two carries)
-        uint8_t overflow = ((op1 ^ result) & (op2 ^ result)) >> 7;
-        p->SREG = overflow ? (p->SREG | FLAG_V) : (p->SREG & ~FLAG_V);
-        // Sign (N XOR V)
-        p->SREG = ((p->SREG & FLAG_N) ^ ((p->SREG & FLAG_V) << 1)) ? 
-                 (p->SREG | FLAG_S) : (p->SREG & ~FLAG_S);
+        uint16_t tmp = (op == OP_ADD) ? (op1 + op2) : ((int)op1 - (int)op2);
+        // Carry = bit-8
+        if (tmp & 0x100)    p->SREG |= FLAG_C;  else p->SREG &= ~FLAG_C;
+        // Overflow = XOR of last two carries
+        uint8_t ovf = ((op1 ^ result) & (op2 ^ result)) >> 7;
+        if (ovf)            p->SREG |= FLAG_V;  else p->SREG &= ~FLAG_V;
+        // Sign = N ⊕ V
+        if ( ((p->SREG & FLAG_N) >> 1) ^ (p->SREG & FLAG_V) )
+                            p->SREG |= FLAG_S;  else p->SREG &= ~FLAG_S;
     }
 }
 
@@ -57,30 +55,89 @@ static void decode(Processor *p) {
 static void execute(Processor *p) {
     if (!p->ID_EX.instr) return;
 
-    uint8_t result = 0;
-    uint8_t op1 = p->R[p->ID_EX.r1];
-    uint8_t op2 = (p->ID_EX.opcode <= OP_MUL || p->ID_EX.opcode == OP_EOR || p->ID_EX.opcode == OP_BR) 
-                 ? p->R[p->ID_EX.r2] : p->ID_EX.imm;
+    uint8_t  r1  = p->ID_EX.r1;
+    uint8_t  r2  = p->ID_EX.r2;
+    int8_t   imm = p->ID_EX.imm;
+    uint8_t  op1 = p->R[r1];
+    uint8_t  op2 = (p->ID_EX.opcode <= OP_MUL || p->ID_EX.opcode == OP_EOR || p->ID_EX.opcode == OP_BR)
+                   ? p->R[r2] : (uint8_t)imm;
+    uint8_t  result = 0;
 
-    switch (p->ID_EX.opcode) {
-        case OP_ADD: // ADD R1 R2
-            result = op1 + op2;
-            p->R[p->ID_EX.r1] = result;
-            update_flags(p, result, op1, op2, OP_ADD);
-            break;
+    switch(p->ID_EX.opcode) {
+      case OP_ADD:
+        result = op1 + op2;
+        p->R[r1] = result;
+        update_flags(p, result, op1, op2, OP_ADD);
+        break;
 
-        case OP_MOVI: // MOVI R1 IMM
-            p->R[p->ID_EX.r1] = p->ID_EX.imm;
-            break;
+      case OP_SUB:
+        result = op1 - op2;
+        p->R[r1] = result;
+        update_flags(p, result, op1, op2, OP_SUB);
+        break;
 
-        case OP_BEQZ: // BEQZ R1 IMM
-            if (p->R[p->ID_EX.r1] == 0) {
-                p->PC = p->ID_EX.pc + 1 + p->ID_EX.imm;
-                p->stall = 2; // Flush pipeline
-            }
-            break;
+      case OP_MUL:
+        result = op1 * op2;
+        p->R[r1] = result;
+        update_flags(p, result, op1, op2, OP_MUL);
+        break;
 
-        // Implement other instructions similarly...
+      case OP_MOVI:
+        p->R[r1] = (uint8_t)imm;
+        break;
+
+      case OP_ANDI:
+        result = op1 & op2;
+        p->R[r1] = result;
+        update_flags(p, result, op1, op2, OP_ANDI);
+        break;
+
+      case OP_EOR:
+        result = op1 ^ op2;
+        p->R[r1] = result;
+        update_flags(p, result, op1, op2, OP_EOR);
+        break;
+
+      case OP_SAL:
+        result = op1 << op2;
+        p->R[r1] = result;
+        update_flags(p, result, op1, op2, OP_SAL);
+        break;
+
+      case OP_SAR:
+        result = (uint8_t)((int8_t)op1 >> op2);
+        p->R[r1] = result;
+        update_flags(p, result, op1, op2, OP_SAR);
+        break;
+
+      case OP_LDR:
+        // Load byte from data_mem[imm]
+        result = p->data_mem[(uint16_t)imm];
+        p->R[r1] = result;
+        break;
+
+      case OP_STR:
+        // Store register to data_mem[imm]
+        p->data_mem[(uint16_t)imm] = p->R[r1];
+        break;
+
+      case OP_BEQZ:
+        if (p->R[r1] == 0) {
+          p->PC    = p->ID_EX.pc + 1 + imm;
+          p->stall = 2;       // flush next two cycles
+        }
+        break;
+
+      case OP_BR: {
+        // Branch to (R[r1] <<8) | R[r2]
+        uint16_t addr = ((uint16_t)op1 << 8) | op2;
+        p->PC    = addr;
+        p->stall = 2;         // flush pipeline
+        break;
+      }
+
+    
+        break;
     }
 }
 
