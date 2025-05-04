@@ -12,10 +12,19 @@ typedef struct {
     uint8_t data_mem[2048];   // 8-bit data memory
 
     // Pipeline registers (IF/ID, ID/EX)
-    struct {
-        uint16_t instr;
-        uint16_t pc;
-    } IF_ID, ID_EX;
+    typedef struct {
+        uint16_t instr;  // Raw instruction (16-bit)
+        uint16_t pc;     // Address of this instruction
+    } IF_ID;
+
+    // Extended version (add fields as you decode):
+typedef struct {
+    uint16_t instr;  // Original instruction
+    uint16_t pc;     // PC value (for branches)
+    uint8_t opcode;  // Decoded opcode (4-bit)
+    uint8_t r1, r2;  // Register indices (6-bit)
+    uint8_t imm;     // Immediate value (6-bit)
+} ID_EX;
 } Processor;
 
 // Function prototypes
