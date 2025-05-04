@@ -33,23 +33,27 @@ static void fetch(Processor *p) {
 
 // Instruction Decode
 static void decode(Processor *p) {
-    if (p->IF_ID.instr && !p->stall) {
-        p->ID_EX = p->IF_ID; // Pass through pipeline
-        
-        // Decode opcode and fields
-        p->ID_EX.opcode = (p->IF_ID.instr >> 12) & 0xF;
-        p->ID_EX.r1 = (p->IF_ID.instr >> 6) & 0x3F;
-        
-        if (p->ID_EX.opcode <= OP_MUL || p->ID_EX.opcode == OP_EOR || p->ID_EX.opcode == OP_BR) {
-            // R-format
-            p->ID_EX.r2 = p->IF_ID.instr & 0x3F;
-        } else {
-            // I-format
-            p->ID_EX.imm = p->IF_ID.instr & 0x3F;
-            if (p->ID_EX.imm & 0x20) p->ID_EX.imm |= 0xC0; // Sign-extend
-        }
-    }
+  if (p->IF_ID.instr && !p->stall) {
+      p->ID_EX = p->IF_ID;  // Pass through pipeline
+
+      // Decode opcode and fields
+      p->ID_EX.opcode = (p->IF_ID.instr >> 12) & 0b1111;       // was 0xF
+      p->ID_EX.r1     = (p->IF_ID.instr >> 6)  & 0b111111;     // was 0x3F
+
+      if (p->ID_EX.opcode <= OP_MUL
+       || p->ID_EX.opcode == OP_EOR
+       || p->ID_EX.opcode == OP_BR) {
+          // R-format
+          p->ID_EX.r2 = p->IF_ID.instr & 0b111111;             // was 0x3F
+      } else {
+          // I-format
+          p->ID_EX.imm = p->IF_ID.instr & 0b111111;            // was 0x3F
+          if (p->ID_EX.imm & 0b100000)                         // was 0x20
+              p->ID_EX.imm |= 0b11000000;                      // was 0xC0 (sign-extend)
+      }
+  }
 }
+
 
 // Execute
 static void execute(Processor *p) {
