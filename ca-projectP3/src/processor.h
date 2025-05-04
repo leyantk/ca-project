@@ -1,4 +1,3 @@
-// processor.h
 #ifndef PROCESSOR_H
 #define PROCESSOR_H
 
@@ -6,14 +5,12 @@
 #include <stdbool.h>
 #include <string.h>
 
-// Status register flags (SREG)
-#define FLAG_C 0x08  // Carry
-#define FLAG_V 0x04  // Overflow
-#define FLAG_N 0x02  // Negative
-#define FLAG_S 0x01  // Sign (N XOR V)
-#define FLAG_Z 0x10  // Zero (custom position)
+#define FLAG_C 0x08  
+#define FLAG_V 0x04  
+#define FLAG_N 0x02  
+#define FLAG_S 0x01  
+#define FLAG_Z 0x10  
 
-// Instruction opcodes
 typedef enum {
     OP_ADD = 0x0,
     OP_SUB = 0x1,
@@ -29,7 +26,6 @@ typedef enum {
     OP_STR = 0xB
 } Opcode;
 
-// Pipeline registers
 typedef struct {
     uint16_t instr;
     uint16_t pc;
@@ -38,27 +34,22 @@ typedef struct {
     int8_t imm;
 } PipelineReg;
 
-// Processor state
 typedef struct {
-    // Registers
-    uint8_t R[64];          // R0-R63
-    uint8_t SREG;           // Status flags
-    uint16_t PC;            // Program Counter
+    uint8_t R[64];          
+    uint8_t SREG;           
+    uint16_t PC;            
 
-    // Harvard Memory
-    uint16_t instr_mem[1024]; // Instruction memory (16-bit words)
-    uint8_t data_mem[2048];   // Data memory (8-bit bytes)
+    uint16_t instr_mem[1024]; 
+    uint8_t data_mem[2048];   
 
-    // Pipeline
     PipelineReg IF_ID, ID_EX;
-    int stall;              // Stall counter for branches
+    int stall;              
 } Processor;
 
-// Function prototypes
 void proc_init(Processor *p);
 void proc_load_program(Processor *p, const char *filename);
 void proc_cycle(Processor *p);
 void print_registers(const Processor *p);
 void print_pipeline(const Processor *p);
 
-#endif // PROCESSOR_H
+#endif 
