@@ -4,11 +4,12 @@
 
 static void update_flags(Processor *p, uint8_t result, uint8_t op1, uint8_t op2, Opcode op) {
     if (result == 0)       p->SREG |= FLAG_Z;  else p->SREG &= ~FLAG_Z;
-    if (result & 0x80)     p->SREG |= FLAG_N;  else p->SREG &= ~FLAG_N;
+    
+    if (result & 0b10000000)     p->SREG |= FLAG_N;  else p->SREG &= ~FLAG_N;
 
     if (op == OP_ADD || op == OP_SUB) {
         uint16_t tmp = (op == OP_ADD) ? (op1 + op2) : ((int)op1 - (int)op2);
-        if (tmp & 0x100)    p->SREG |= FLAG_C;  else p->SREG &= ~FLAG_C;
+        if (tmp & 0b100000000)    p->SREG |= FLAG_C;  else p->SREG &= ~FLAG_C;
         uint8_t ovf = ((op1 ^ result) & (op2 ^ result)) >> 7;
         if (ovf)            p->SREG |= FLAG_V;  else p->SREG &= ~FLAG_V;
         if ( ((p->SREG & FLAG_N) >> 1) ^ (p->SREG & FLAG_V) )
@@ -45,7 +46,6 @@ static void decode(Processor *p) {
 }
 
 
-// Execute
 static void execute(Processor *p) {
     if (!p->ID_EX.instr) return;
 
