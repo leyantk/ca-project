@@ -2,13 +2,13 @@
 #include <stdio.h>
 
 
-static void update_flags(Processor *p, uint8_t result, uint8_t op1, uint8_t op2, Opcode op) {
+static void update_flags(Processor *p, uint8_t result, uint8_t op1, uint8_t op2, uint8_t op) {
     if (result == 0)       p->SREG |= FLAG_Z;  else p->SREG &= ~FLAG_Z;
     
     if (result & 0b10000000)     p->SREG |= FLAG_N;  else p->SREG &= ~FLAG_N;
 
-    if (op == OP_ADD || op == OP_SUB) {
-        uint16_t tmp = (op == OP_ADD) ? (op1 + op2) : ((int)op1 - (int)op2);
+    if (op == 0000 || op == 0001) {
+        uint16_t tmp = (op == 0000) ? (op1 + op2) : ((int)op1 - (int)op2);
         if (tmp & 0b100000000)    p->SREG |= FLAG_C;  else p->SREG &= ~FLAG_C;
         uint8_t ovf = ((op1 ^ result) & (op2 ^ result)) >> 7;
         if (ovf)            p->SREG |= FLAG_V;  else p->SREG &= ~FLAG_V;
@@ -33,9 +33,9 @@ static void decode(Processor *p) {
       p->ID_EX.opcode = (p->IF_ID.instr >> 12) & 0b1111;       
       p->ID_EX.r1     = (p->IF_ID.instr >> 6)  & 0b111111;     
 
-      if (p->ID_EX.opcode <= OP_MUL
-       || p->ID_EX.opcode == OP_EOR
-       || p->ID_EX.opcode == OP_BR) {
+      if (p->ID_EX.opcode <= 0010
+       || p->ID_EX.opcode == 0110
+       || p->ID_EX.opcode == 0111) {
           p->ID_EX.r2 = p->IF_ID.instr & 0b111111;             
       } else {
           p->ID_EX.imm = p->IF_ID.instr & 0b111111;           
@@ -53,74 +53,74 @@ static void execute(Processor *p) {
     uint8_t  r2  = p->ID_EX.r2;
     int8_t   imm = p->ID_EX.imm;
     uint8_t  op1 = p->R[r1];
-    uint8_t  op2 = (p->ID_EX.opcode <= OP_MUL || p->ID_EX.opcode == OP_EOR || p->ID_EX.opcode == OP_BR)
+    uint8_t  op2 = (p->ID_EX.opcode <= 0010 || p->ID_EX.opcode == 0110 || p->ID_EX.opcode == 0111)
                    ? p->R[r2] : (uint8_t)imm;
     uint8_t  result = 0;
 
     switch(p->ID_EX.opcode) {
-      case OP_ADD:
+      case 0000:
         result = op1 + op2;
         p->R[r1] = result;
-        update_flags(p, result, op1, op2, OP_ADD);
+        update_flags(p, result, op1, op2, 0000);
         break;
 
-      case OP_SUB:
+      case 0001:
         result = op1 - op2;
         p->R[r1] = result;
-        update_flags(p, result, op1, op2, OP_SUB);
+        update_flags(p, result, op1, op2, 0001);
         break;
 
-      case OP_MUL:
+      case 0010:
         result = op1 * op2;
         p->R[r1] = result;
-        update_flags(p, result, op1, op2, OP_MUL);
+        update_flags(p, result, op1, op2, 0010);
         break;
 
-      case OP_MOVI:
+      case 0011:
         p->R[r1] = (uint8_t)imm;
         break;
 
-      case OP_ANDI:
+      case 0101:
         result = op1 & op2;
         p->R[r1] = result;
-        update_flags(p, result, op1, op2, OP_ANDI);
+        update_flags(p, result, op1, op2, 0101);
         break;
 
-      case OP_EOR:
+      case 0110:
         result = op1 ^ op2;
         p->R[r1] = result;
-        update_flags(p, result, op1, op2, OP_EOR);
+        update_flags(p, result, op1, op2, 0110);
         break;
 
-      case OP_SAL:
+      case 1000:
         result = op1 << op2;
         p->R[r1] = result;
-        update_flags(p, result, op1, op2, OP_SAL);
+        update_flags(p, result, op1, op2, 1000);
         break;
 
-      case OP_SAR:
+      case 1001:
         result = (uint8_t)((int8_t)op1 >> op2);
         p->R[r1] = result;
-        update_flags(p, result, op1, op2, OP_SAR);
+        update_flags(p, result, op1, op2, 1001);
         break;
 
-      case OP_LDR:
+      case 1010:
         result = p->data_mem[(uint16_t)imm];
         p->R[r1] = result;
         break;
 
-      case OP_STR:
+      case 1011:
         p->data_mem[(uint16_t)imm] = p->R[r1];
         break;
 
-      case OP_BEQZ:
+      case 0100:
         if (p->R[r1] == 0) {
           p->PC    = p->ID_EX.pc + 1 + imm;
           p->stall = 2;       
         }
         break;
 
-      case OP_BR: {
+      case 0111: {
         uint16_t addr = ((uint16_t)op1 << 8) | op2;
         p->PC    = addr;
         p->stall = 2;         

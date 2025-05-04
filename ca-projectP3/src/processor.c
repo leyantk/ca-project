@@ -1,7 +1,7 @@
 #include "processor.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+//initialize processor
 void proc_init(Processor *p) {
     memset(p->R, 0, 64);                    
     p->SREG = 0;                            
@@ -27,40 +27,40 @@ void proc_load_program(Processor *p, const char *filename) {
         char label[64];
 
         if (sscanf(line, "MOVI R%u %u", &r1, &imm) == 2) {
-            instr = (OP_MOVI << 12) | ((r1 & 0x3F)<<6) | (imm & 0x3F);
+            instr = (0b0011 << 12) | ((r1 & 0b111111)<<6) | (imm & 0b111111);
         }
         else if (sscanf(line, "ADD R%u R%u", &r1, &r2) == 2) {
-            instr = (OP_ADD << 12) | ((r1&0x3F)<<6) | (r2&0x3F);
+            instr = (0b0000 << 12) | ((r1&0b111111)<<6) | (r2&0b111111);
         }
         else if (sscanf(line, "SUB R%u R%u", &r1, &r2) == 2) {
-            instr = (OP_SUB << 12) | ((r1&0x3F)<<6) | (r2&0x3F);
+            instr = (0b0001 << 12) | ((r1&0b111111)<<6) | (r2&0b111111);
         }
         else if (sscanf(line, "MUL R%u R%u", &r1, &r2) == 2) {
-            instr = (OP_MUL << 12) | ((r1&0x3F)<<6) | (r2&0x3F);
+            instr = (0b0010 << 12) | ((r1&0b111111)<<6) | (r2&0b111111);
         }
         else if (sscanf(line, "ANDI R%u %u", &r1, &imm) == 2) {
-            instr = (OP_ANDI << 12) | ((r1&0x3F)<<6) | (imm & 0x3F);
+            instr = (0b0101 << 12) | ((r1&0b111111)<<6) | (imm & 0b111111);
         }
         else if (sscanf(line, "EOR R%u R%u", &r1, &r2) == 2) {
-            instr = (OP_EOR << 12) | ((r1&0x3F)<<6) | (r2&0x3F);
+            instr = (0b0110 << 12) | ((r1&0b111111)<<6) | (r2&0b111111);
         }
         else if (sscanf(line, "SAL R%u %u", &r1, &imm) == 2) {
-            instr = (OP_SAL << 12) | ((r1&0x3F)<<6) | (imm & 0x3F);
+            instr = (0b1000 << 12) | ((r1&0b111111)<<6) | (imm & 0b111111);
         }
         else if (sscanf(line, "SAR R%u %u", &r1, &imm) == 2) {
-            instr = (OP_SAR << 12) | ((r1&0x3F)<<6) | (imm & 0x3F);
+            instr = (0b1001 << 12) | ((r1&0b111111)<<6) | (imm & 0b111111);
         }
         else if (sscanf(line, "BEQZ R%u %u", &r1, &imm) == 2) {
-            instr = (OP_BEQZ << 12) | ((r1&0x3F)<<6) | (imm & 0x3F);
+            instr = (0b0100 << 12) | ((r1&0b111111)<<6) | (imm & 0b111111);
         }
         else if (sscanf(line, "BR R%u R%u", &r1, &r2) == 2) {
-            instr = (OP_BR << 12) | ((r1&0x3F)<<6) | (r2&0x3F);
+            instr = (0b0111<< 12) | ((r1&0b111111)<<6) | (r2&0b111111);
         }
         else if (sscanf(line, "LDR R%u , %63s", &r1, label) == 2) {
-            instr = (OP_LDR << 12) | ((r1&0x3F)<<6) | (imm & 0x3F);
+            instr = (0b1010 << 12) | ((r1&0b111111)<<6) | (imm & 0b111111);
         }
         else if (sscanf(line, "STR R%u , %63s", &r1, label) == 2) {
-            instr = (OP_STR << 12) | ((r1&0x3F)<<6) | (imm & 0x3F);
+            instr = (0b1011 << 12) | ((r1&0b111111)<<6) | (imm & 0b111111);
         }
         else {
             fprintf(stderr, "Unknown instr: %s", line);
