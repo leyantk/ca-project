@@ -1,28 +1,21 @@
-// pipeline.c
 #include "processor.h"
 #include <stdio.h>
 
 
 static void update_flags(Processor *p, uint8_t result, uint8_t op1, uint8_t op2, Opcode op) {
-    // Z and N always
     if (result == 0)       p->SREG |= FLAG_Z;  else p->SREG &= ~FLAG_Z;
     if (result & 0x80)     p->SREG |= FLAG_N;  else p->SREG &= ~FLAG_N;
 
-    // only ADD/SUB affect C, V, S
     if (op == OP_ADD || op == OP_SUB) {
         uint16_t tmp = (op == OP_ADD) ? (op1 + op2) : ((int)op1 - (int)op2);
-        // Carry = bit-8
         if (tmp & 0x100)    p->SREG |= FLAG_C;  else p->SREG &= ~FLAG_C;
-        // Overflow = XOR of last two carries
         uint8_t ovf = ((op1 ^ result) & (op2 ^ result)) >> 7;
         if (ovf)            p->SREG |= FLAG_V;  else p->SREG &= ~FLAG_V;
-        // Sign = N ⊕ V
         if ( ((p->SREG & FLAG_N) >> 1) ^ (p->SREG & FLAG_V) )
                             p->SREG |= FLAG_S;  else p->SREG &= ~FLAG_S;
     }
 }
 
-// Instruction Fetch
 static void fetch(Processor *p) {
     if (p->PC < 1024 && !p->stall) {
         p->IF_ID.instr = p->instr_mem[p->PC];
@@ -31,25 +24,22 @@ static void fetch(Processor *p) {
     }
 }
 
-// Instruction Decode
+
 static void decode(Processor *p) {
   if (p->IF_ID.instr && !p->stall) {
-      p->ID_EX = p->IF_ID;  // Pass through pipeline
+      p->ID_EX = p->IF_ID;  
 
-      // Decode opcode and fields
-      p->ID_EX.opcode = (p->IF_ID.instr >> 12) & 0b1111;       // was 0xF
-      p->ID_EX.r1     = (p->IF_ID.instr >> 6)  & 0b111111;     // was 0x3F
+      p->ID_EX.opcode = (p->IF_ID.instr >> 12) & 0b1111;       
+      p->ID_EX.r1     = (p->IF_ID.instr >> 6)  & 0b111111;     
 
       if (p->ID_EX.opcode <= OP_MUL
        || p->ID_EX.opcode == OP_EOR
        || p->ID_EX.opcode == OP_BR) {
-          // R-format
-          p->ID_EX.r2 = p->IF_ID.instr & 0b111111;             // was 0x3F
+          p->ID_EX.r2 = p->IF_ID.instr & 0b111111;             
       } else {
-          // I-format
-          p->ID_EX.imm = p->IF_ID.instr & 0b111111;            // was 0x3F
-          if (p->ID_EX.imm & 0b100000)                         // was 0x20
-              p->ID_EX.imm |= 0b11000000;                      // was 0xC0 (sign-extend)
+          p->ID_EX.imm = p->IF_ID.instr & 0b111111;           
+          if (p->ID_EX.imm & 0b100000)                         
+              p->ID_EX.imm |= 0b11000000;                      
       }
   }
 }
@@ -115,28 +105,25 @@ static void execute(Processor *p) {
         break;
 
       case OP_LDR:
-        // Load byte from data_mem[imm]
         result = p->data_mem[(uint16_t)imm];
         p->R[r1] = result;
         break;
 
       case OP_STR:
-        // Store register to data_mem[imm]
         p->data_mem[(uint16_t)imm] = p->R[r1];
         break;
 
       case OP_BEQZ:
         if (p->R[r1] == 0) {
           p->PC    = p->ID_EX.pc + 1 + imm;
-          p->stall = 2;       // flush next two cycles
+          p->stall = 2;       
         }
         break;
 
       case OP_BR: {
-        // Branch to (R[r1] <<8) | R[r2]
         uint16_t addr = ((uint16_t)op1 << 8) | op2;
         p->PC    = addr;
-        p->stall = 2;         // flush pipeline
+        p->stall = 2;         
         break;
       }
 
@@ -145,7 +132,6 @@ static void execute(Processor *p) {
     }
 }
 
-// Advance pipeline
 void proc_cycle(Processor *p) {
     if (p->stall > 0) {
         p->stall--;
@@ -161,13 +147,11 @@ void proc_cycle(Processor *p) {
     fetch(p);
 }
 
-// Print pipeline state
 void print_pipeline(const Processor *p) {
     printf("PC: 0x%04X | IF: 0x%04X | ID: 0x%04X | EX: 0x%04X\n",
            p->PC, p->IF_ID.instr, p->ID_EX.instr, p->ID_EX.instr);
 }
 
-// Print registers
 void print_registers(const Processor *p) {
     printf("Registers:\n");
     for (int i = 0; i < 8; i++) {
