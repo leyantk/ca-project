@@ -11,20 +11,7 @@
 #define FLAG_S 0x01  
 #define FLAG_Z 0x10  
 
-typedef enum {
-    OP_ADD = 0x0,
-    OP_SUB = 0x1,
-    OP_MUL = 0x2,
-    OP_MOVI = 0x3,
-    OP_BEQZ = 0x4,
-    OP_ANDI = 0x5,
-    OP_EOR = 0x6,
-    OP_BR = 0x7,
-    OP_SAL = 0x8,
-    OP_SAR = 0x9,
-    OP_LDR = 0xA,
-    OP_STR = 0xB
-} Opcode;
+
 
 typedef struct {
     uint16_t instr;
@@ -51,5 +38,12 @@ void proc_load_program(Processor *p, const char *filename);
 void proc_cycle(Processor *p);
 void print_registers(const Processor *p);
 void print_pipeline(const Processor *p);
+// Memory-related functions
+void mem_init(Processor *p);
+void mem_load_program(Processor *p, const char *filename);
+uint8_t mem_read_data(Processor *p, uint16_t addr);
+void mem_write_data(Processor *p, uint16_t addr, uint8_t data);
+void mem_print_instr(const Processor *p);
+void mem_print_data(const Processor *p);
 
 #endif 
