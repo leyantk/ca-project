@@ -22,7 +22,7 @@ void mem_load_program(Processor *p, const char *filename) {
         bool flag=true;
 
         uint16_t instr = 0;
-        uint16_t op = 0, rs = 0, rt = 0, rd = 0, shamt = 0, funct = 0, imm = 0;
+        uint16_t op , rs , rt ,  imm ;
         unsigned r1, r2, immediate;
         char label[64];
 
