@@ -26,6 +26,7 @@ typedef struct {
     int16_t  imm;
     uint8_t  valueRS;
     uint8_t  valueRT;
+    bool     valid;
 } ID_EX_Reg;
 
 typedef struct {
