@@ -1,15 +1,21 @@
 #include "processor.h"
 #include <stdio.h>
 #include <stdlib.h>
-//initialize processor
+#include <string.h> // Needed for memset
+
+// Initialize processor
 void proc_init(Processor *p) {
-    memset(p->R, 0, 64);
+    memset(p->R, 0, sizeof(p->R));
     p->SREG = 0;
     p->PC = 0;
-    mem_init(p); // Initialize memories
-    memset(&p->IF_ID, 0, sizeof(PipelineReg));
-    memset(&p->ID_EX, 0, sizeof(PipelineReg));
+
+    // Initialize memories
+    memset(p->instr_mem, 0, sizeof(p->instr_mem));
+    memset(p->data_mem, 0, sizeof(p->data_mem));
+
+    // Clear pipeline registers
+    memset(&p->IF_ID, 0, sizeof(IF_ID_Reg));
+    memset(&p->ID_EX, 0, sizeof(ID_EX_Reg));
+
     p->stall = 0;
 }
-
-
