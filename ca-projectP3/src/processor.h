@@ -1,4 +1,3 @@
-
 #ifndef PROCESSOR_H
 #define PROCESSOR_H
 
@@ -39,6 +38,9 @@ typedef struct {
 
     IF_ID_Reg    IF_ID;
     ID_EX_Reg    ID_EX;
+    uint16_t     EX_instr;
+    uint16_t     EX_pc;
+    bool         EX_valid;
 } Processor;
 
 void proc_init(Processor *p);
@@ -50,5 +52,5 @@ void mem_print_instr(const Processor *p);
 void mem_print_data(const Processor *p);
 void proc_cycle(Processor *p);
 void print_registers(const Processor *p);
-void print_pipeline(const Processor *p);
+void print_pipeline(const Processor *p, int cycle);
 #endif

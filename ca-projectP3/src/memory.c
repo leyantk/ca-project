@@ -18,20 +18,20 @@ void mem_load_program(Processor *p, const char *filename) {
     printf("Opening file: %s\n", filename);
 
     char line[128];
-    uint16_t addr = 0x020F;  // Start loading at 0x020F
+    uint16_t addr = 0;  // Start loading at 0
 
     while (fgets(line, sizeof(line), file) && addr < 0x0400) {
         if (line[0] == '\n' || line[0] == ';' || line[0] == '#') continue;
 
         char op[16];
-        int r1 = 0, r2 = 0, r3 = 0, value = 0;
+        int r1 = 0, r2 = 0, value = 0;
         uint16_t opcode = 0, rs = 0, rt = 0, imm = 0;
         uint16_t instr = 0;
 
-        if (sscanf(line, "%s R%d R%d R%d", op, &r1, &r2, &r3) == 4) {
+        if (sscanf(line, "%s R%d R%d", op, &r1, &r2) == 3) {
             rs = (uint8_t)r1;
             rt = (uint8_t)r2;
-            value = (uint8_t)r3;
+            
 
             if      (strcmp(op, "ADD") == 0) opcode = 0;
             else if (strcmp(op, "SUB") == 0) opcode = 1;
@@ -88,6 +88,7 @@ uint8_t mem_read_data(Processor *p, uint16_t addr) {
 void mem_write_data(Processor *p, uint16_t addr, uint8_t data) {
     if (addr >= 2048) return;
     p->data_mem[addr] = data;
+    printf("Memory[0x%04X] updated to 0x%02X\n", addr, data);
 }
 
 void mem_print_instr(const Processor *p) {
