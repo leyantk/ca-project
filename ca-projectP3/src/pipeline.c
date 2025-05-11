@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 // === FLAGS ===
+
 static void update_flags(Processor *p, uint8_t result, uint8_t op1, uint8_t op2, uint8_t op) {
   p->SREG = 0;
   if (result == 0) p->SREG |= FLAG_Z;
@@ -40,11 +41,13 @@ void decode(Processor *p) {
     E.pc      = p->IF_ID.pc;
     E.opcode  = (instr >> 12) & 0x0F;
     E.rs      = (instr >> 6) & 0x3F;
-    E.rt      = instr & 0x3F;
-    if (E.opcode == 3 || E.opcode == 4 || E.opcode == 10 || E.opcode == 11) {
-        E.imm = (int16_t)((int8_t)(instr & 0xFF));
-    } else {
+ 
+    if (E.opcode == 3 || E.opcode == 4 || E.opcode == 5 || E.opcode == 10 || E.opcode == 11 ||E.opcode == 8 ||E.opcode == 9) {
         E.imm = (int16_t)((int8_t)(instr & 0x3F));
+        E.rt=0;
+    } else {
+        E.imm=0;
+        E.rt = (int16_t)((int8_t)(instr & 0x3F));
     }
     E.valueRS = p->R[E.rs];
     E.valueRT = p->R[E.rt];
@@ -97,14 +100,33 @@ skip_write:
 }
 
 void proc_cycle(Processor *p) {
-    // Shift EX stage
+   // EX stage
+    // Shift EX stage AFTER execution
     p->EX_instr = p->ID_EX.instr;
     p->EX_pc = p->ID_EX.pc;
     p->EX_valid = p->ID_EX.valid;
+    execute(p); 
+    decode(p);  // ID stage
+    fetch(p);   // IF stage
+}
 
-    execute(p);
-    decode(p);
-    fetch(p);
+
+
+void print_registers(const Processor *p) {
+    printf("Registers:\n");
+    int any = 0;
+    for (int i = 0; i < 64; i++) {
+        printf("R%02d: 0x%02X  ", i, p->R[i]);
+        if (p->R[i] && i != 0) any = 1;
+        if ((i & 7) == 7) printf("\n");
+    }
+    if (!any) printf("(all zero except R0)\n");
+    printf("SREG: [%c%c%c%c%c]\n",
+           (p->SREG & FLAG_C) ? 'C' : '-',
+           (p->SREG & FLAG_V) ? 'V' : '-',
+           (p->SREG & FLAG_N) ? 'N' : '-',
+           (p->SREG & FLAG_S) ? 'S' : '-',
+           (p->SREG & FLAG_Z) ? 'Z' : '-');
 }
 
 void print_pipeline(const Processor *p, int cycle) {
@@ -127,22 +149,5 @@ void print_pipeline(const Processor *p, int cycle) {
     else
         sprintf(ex_buf, "-");
     printf("| %-30s | %-60s | %-30s |\n", if_buf, id_buf, ex_buf);
-}
-
-void print_registers(const Processor *p) {
-    printf("Registers:\n");
-    int any = 0;
-    for (int i = 0; i < 64; i++) {
-        printf("R%02d: 0x%02X  ", i, p->R[i]);
-        if (p->R[i] && i != 0) any = 1;
-        if ((i & 7) == 7) printf("\n");
-    }
-    if (!any) printf("(all zero except R0)\n");
-    printf("SREG: [%c%c%c%c%c]\n",
-           (p->SREG & FLAG_C) ? 'C' : '-',
-           (p->SREG & FLAG_V) ? 'V' : '-',
-           (p->SREG & FLAG_N) ? 'N' : '-',
-           (p->SREG & FLAG_S) ? 'S' : '-',
-           (p->SREG & FLAG_Z) ? 'Z' : '-');
 }
 

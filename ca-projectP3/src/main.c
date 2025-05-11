@@ -11,18 +11,22 @@ int main() {
 
     printf("===== Simulation Start =====\n");
 
-    int max_cycles = 1024;  // to prevent infinite loops in edge cases
-    int cycles = 0;
     bool running = true;
+    int cycles = 0;
 
-    while (running && cycles++ < max_cycles) {
-        print_pipeline(&cpu, cycles);
+    while (running) {
         proc_cycle(&cpu);
-        running = cpu.IF_ID.valid || cpu.ID_EX.valid || cpu.PC < 1024;
+        print_pipeline(&cpu, ++cycles);
+        running = cpu.IF_ID.valid || cpu.ID_EX.valid || cpu.EX_valid || cpu.PC < 1024;
     }
 
     printf("\n===== Final Registers =====\n");
     print_registers(&cpu);
+    printf("PC: 0x%04X\n", cpu.PC);
+    printf("SREG: 0x%02X\n", cpu.SREG);
+
+    printf("\n===== Final Instruction Memory =====\n");
+    mem_print_instr(&cpu);
 
     printf("\n===== Final Data Memory =====\n");
     mem_print_data(&cpu);

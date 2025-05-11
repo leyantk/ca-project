@@ -62,10 +62,10 @@ void mem_load_program(Processor *p, const char *filename) {
                 exit(EXIT_FAILURE);
             }
 
-            if (opcode == 3 || opcode == 4 || opcode == 10 || opcode == 11) {
-                instr = (opcode << 12) | ((rs & 0x3F) << 6) | (imm & 0xFF);
-            } else {
+            if (opcode == 3 || opcode == 4 || opcode == 5 || opcode == 10 || opcode == 11 ||opcode == 8 ||opcode == 9 ) {
                 instr = (opcode << 12) | ((rs & 0x3F) << 6) | (imm & 0x3F);
+            } else {
+                instr = (opcode << 12) | ((rs & 0x3F) << 6) | (rt & 0x3F);
             }
             printf("Loaded: %04X at addr %d from line: %s", instr, addr, line);
             p->instr_mem[addr++] = instr;
@@ -88,7 +88,7 @@ uint8_t mem_read_data(Processor *p, uint16_t addr) {
 void mem_write_data(Processor *p, uint16_t addr, uint8_t data) {
     if (addr >= 2048) return;
     p->data_mem[addr] = data;
-    printf("Memory[0x%04X] updated to 0x%02X\n", addr, data);
+    printf("[EX] Memory[0x%04X] updated to 0x%02X\n", addr, data);
 }
 
 void mem_print_instr(const Processor *p) {
