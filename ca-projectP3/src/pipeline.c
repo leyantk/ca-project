@@ -21,8 +21,8 @@ void fetch(Processor *p) {
   if (p->PC < 1024) {
       uint16_t instr = p->instr_mem[p->PC];
       if (instr == 0) {
-          p->IF_ID.valid = false;
-          p->ID_EX.valid = false;
+          //p->IF_ID.valid = false;
+          //p->ID_EX.valid = false;
           p->PC = 1024;
           return;
       }
@@ -100,15 +100,26 @@ skip_write:
 }
 
 void proc_cycle(Processor *p) {
-   // EX stage
-    // Shift EX stage AFTER execution
+    // --- EX stage (always) ---
     p->EX_instr = p->ID_EX.instr;
-    p->EX_pc = p->ID_EX.pc;
+    p->EX_pc    = p->ID_EX.pc;
     p->EX_valid = p->ID_EX.valid;
-    execute(p); 
-    decode(p);  // ID stage
-    fetch(p);   // IF stage
+    execute(p);
+
+    // --- ID stage (always) ---
+    decode(p);
+
+    // --- IF stage only if there’s still memory to fetch ---
+    if (p->PC < 1024) {
+        fetch(p);
+
+    } 
+    
 }
+
+
+
+
 
 
 
