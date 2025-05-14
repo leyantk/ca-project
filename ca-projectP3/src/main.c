@@ -16,7 +16,12 @@ int main() {
 
     while (running) {
         proc_cycle(&cpu);
-        print_pipeline(&cpu, ++cycles);
+        if(!cpu.EX_valid && !cpu.IF_ID.valid && !cpu.ID_EX.valid && cpu.PC>=1024 ){
+            break;
+        }
+        else{
+              print_pipeline(&cpu, ++cycles);
+        }
         running = cpu.IF_ID.valid || cpu.ID_EX.valid || cpu.EX_valid || cpu.PC < 1024;
     }
 

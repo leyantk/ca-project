@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-// === FLAGS ===
+
 
 static void update_flags(Processor *p, uint8_t result, uint8_t op1, uint8_t op2, uint8_t op) {
   p->SREG = 0;
@@ -100,16 +100,16 @@ skip_write:
 }
 
 void proc_cycle(Processor *p) {
-    // --- EX stage (always) ---
+   
     p->EX_instr = p->ID_EX.instr;
     p->EX_pc    = p->ID_EX.pc;
     p->EX_valid = p->ID_EX.valid;
     execute(p);
 
-    // --- ID stage (always) ---
+
     decode(p);
 
-    // --- IF stage only if there’s still memory to fetch ---
+ 
     if (p->PC < 1024) {
         fetch(p);
 
@@ -143,18 +143,25 @@ void print_registers(const Processor *p) {
 void print_pipeline(const Processor *p, int cycle) {
     static char if_buf[64], id_buf[128], ex_buf[128];
     printf("Clock Cycle %d\n", cycle);
-    // IF stage
+   
     if (p->IF_ID.valid)
         sprintf(if_buf, "Instruction %d (PC=%d)", p->IF_ID.pc + 1, p->IF_ID.pc);
     else
         sprintf(if_buf, "-");
-    // ID stage
-    if (p->ID_EX.valid)
-        sprintf(id_buf, "Instruction %d (opcode=%d, rs=R%d=%d, rt=R%d=%d, imm=%d)", 
-            p->ID_EX.pc + 1, p->ID_EX.opcode, p->ID_EX.rs, p->ID_EX.valueRS, p->ID_EX.rt, p->ID_EX.valueRT, p->ID_EX.imm);
+ 
+    if (p->ID_EX.valid){
+        if ( p->ID_EX.opcode == 3 ||  p->ID_EX.opcode == 4 ||  p->ID_EX.opcode == 5 ||  p->ID_EX.opcode == 10 ||  p->ID_EX.opcode == 11 || p->ID_EX.opcode == 8 || p->ID_EX.opcode == 9) {
+          sprintf(id_buf, "Instruction %d (opcode=%d, rs=R%d=%d, , imm=%d)", 
+            p->ID_EX.pc + 1, p->ID_EX.opcode, p->ID_EX.rs, p->ID_EX.valueRS, p->ID_EX.imm);
+    } else {
+         sprintf(id_buf, "Instruction %d (opcode=%d, rs=R%d=%d, rt=R%d=%d)", 
+            p->ID_EX.pc + 1, p->ID_EX.opcode, p->ID_EX.rs, p->ID_EX.valueRS, p->ID_EX.rt, p->ID_EX.valueRT);
+        
+            }
+        }
     else
         sprintf(id_buf, "-");
-    // EX stage
+  
     if (p->EX_valid)
         sprintf(ex_buf, "Instruction %d (PC=%d)", p->EX_pc + 1, p->EX_pc);
     else

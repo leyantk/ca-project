@@ -18,7 +18,7 @@ void mem_load_program(Processor *p, const char *filename) {
     printf("Opening file: %s\n", filename);
 
     char line[128];
-    uint16_t addr = 0;  // Start loading at 0
+    uint16_t addr = 0; 
 
     while (fgets(line, sizeof(line), file) && addr < 0x0400) {
         if (line[0] == '\n' || line[0] == ';' || line[0] == '#') continue;
