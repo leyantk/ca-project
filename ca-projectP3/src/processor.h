@@ -4,11 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define FLAG_C 0x08  /* Carry flag  */
-#define FLAG_V 0x04  /* Overflow flag */
-#define FLAG_N 0x02  /* Negative flag */
-#define FLAG_S 0x01  /* Sign flag */
-#define FLAG_Z 0x10  /* Zero flag     */
+#define FLAG_C 0x08  // carry flag
+#define FLAG_V 0x04  // overflow
+#define FLAG_N 0x02  // negative
+#define FLAG_S 0x01  // sign
+#define FLAG_Z 0x10  // zero
 
 typedef struct {
     uint16_t instr;
@@ -50,7 +50,7 @@ uint8_t mem_read_data(Processor *p, uint16_t addr);
 void mem_write_data(Processor *p, uint16_t addr, uint8_t data);
 void mem_print_instr(const Processor *p);
 void mem_print_data(const Processor *p);
-void proc_cycle(Processor *p);
+void processa_cycle(Processor *p);
 void print_registers(const Processor *p);
 void print_pipeline(const Processor *p, int cycle);
 #endif

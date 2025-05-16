@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-// === MEMORY LOAD ===
+
 void mem_init(Processor *p) {
     memset(p->instr_mem, 0, sizeof(p->instr_mem));
     memset(p->data_mem, 0, sizeof(p->data_mem));
@@ -24,9 +24,14 @@ void mem_load_program(Processor *p, const char *filename) {
         if (line[0] == '\n' || line[0] == ';' || line[0] == '#') continue;
 
         char op[16];
-        int r1 = 0, r2 = 0, value = 0;
-        uint16_t opcode = 0, rs = 0, rt = 0, imm = 0;
-        uint16_t instr = 0;
+        int r1 = 0;
+        int r2 = 0;
+        int value = 0;
+        uint16_t opcode = 0;
+        uint16_t rs = 0;
+        uint16_t rt = 0;
+        uint16_t imm = 0;
+        uint16_t instruction = 0;
 
         if (sscanf(line, "%s R%d R%d", op, &r1, &r2) == 3) {
             rs = (uint8_t)r1;
@@ -42,9 +47,9 @@ void mem_load_program(Processor *p, const char *filename) {
                 fprintf(stderr, "Unknown opcode: %s\n", op);
                 exit(EXIT_FAILURE);
             }
-            instr = (opcode << 12) | ((rs & 0x3F) << 6) | (rt & 0x3F);
-            printf("Loaded: %04X at addr %d from line: %s", instr, addr, line);
-            p->instr_mem[addr++] = instr;
+            instruction = (opcode << 12) | ((rs & 0x3F) << 6) | (rt & 0x3F);
+            printf("Loaded: %04X at addr %d from line: %s", instruction, addr, line);
+            p->instr_mem[addr++] = instruction;
 
         } else if (sscanf(line, "%s R%d %d", op, &r1, &value) == 3) {
             rs = (uint8_t)r1;
@@ -63,12 +68,12 @@ void mem_load_program(Processor *p, const char *filename) {
             }
 
             if (opcode == 3 || opcode == 4 || opcode == 5 || opcode == 10 || opcode == 11 ||opcode == 8 ||opcode == 9 ) {
-                instr = (opcode << 12) | ((rs & 0x3F) << 6) | (imm & 0x3F);
+                instruction = (opcode << 12) | ((rs & 0x3F) << 6) | (imm & 0x3F);
             } else {
-                instr = (opcode << 12) | ((rs & 0x3F) << 6) | (rt & 0x3F);
+                instruction = (opcode << 12) | ((rs & 0x3F) << 6) | (rt & 0x3F);
             }
-            printf("Loaded: %04X at addr %d from line: %s", instr, addr, line);
-            p->instr_mem[addr++] = instr;
+            printf("Loaded: %04X at addr %d from line: %s", instruction, addr, line);
+            p->instr_mem[addr++] = instruction;
 
         } else {
             fprintf(stderr, "Invalid instruction format: %s", line);
@@ -95,11 +100,11 @@ void mem_print_instr(const Processor *p) {
     printf("Instruction Memory:\n");
     for (int i = 0; i < 1024; i++) {
         if (p->instr_mem[i]) {
-            uint16_t instr = p->instr_mem[i];
-            uint8_t opcode = (instr >> 12) & 0x0F;
-            uint8_t rs = (instr >> 6) & 0x3F;
-            uint8_t rt = instr & 0x3F;
-            printf("0x%04X: 0x%04X (opcode=%d, rs=%d, rt=%d)\n", i, instr, opcode, rs, rt);
+            uint16_t instruction = p->instr_mem[i];
+            uint8_t opcode = (instruction >> 12) & 0x0F;
+            uint8_t rs = (instruction >> 6) & 0x3F;
+            uint8_t rt = instruction & 0x3F;
+            printf("0x%04X: 0x%04X (opcode=%d, rs=%d, rt=%d)\n", i, instruction, opcode, rs, rt);
         }
     }
 }
