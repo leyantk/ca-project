@@ -29,7 +29,7 @@ typedef struct {
 } ID_EX_Reg;
 
 typedef struct {
-    uint8_t      R[64];
+    uint8_t      Register[64];
     uint8_t      SREG;
     uint16_t     PC;
 
@@ -50,7 +50,7 @@ uint8_t mem_read_data(Processor *p, uint16_t addr);
 void mem_write_data(Processor *p, uint16_t addr, uint8_t data);
 void mem_print_instr(const Processor *p);
 void mem_print_data(const Processor *p);
-void processa_cycle(Processor *p);
+void process_cycle(Processor *p);
 void print_registers(const Processor *p);
 void print_pipeline(const Processor *p, int cycle);
 #endif

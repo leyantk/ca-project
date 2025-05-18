@@ -15,7 +15,7 @@ int main() {
     int cyclescounter = 0;
 
     while (isrunning) {
-        processa_cycle(&cpu);
+        process_cycle(&cpu);
         if(!cpu.EX_valid && !cpu.IF_ID.valid && !cpu.ID_EX.valid && cpu.PC>=1024 ){
             break;
         }

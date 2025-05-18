@@ -32,8 +32,7 @@ void mem_load_program(Processor *p, const char *filename) {
         uint16_t rt = 0;
         uint16_t imm = 0;
         uint16_t instruction = 0;
-
-        if (sscanf(line, "%s R%d R%d", op, &r1, &r2) == 3) {
+         if (sscanf(line, "%s R%d R%d", op, &r1, &r2) == 3) {
             rs = (uint8_t)r1;
             rt = (uint8_t)r2;
             
@@ -81,8 +80,9 @@ void mem_load_program(Processor *p, const char *filename) {
         }
     }
 
-    printf("\nLoaded %d instructions\n", addr - 0x020F);
+    printf("\nLoaded %d instructions\n", addr );
     fclose(file);
+
 }
 
 uint8_t mem_read_data(Processor *p, uint16_t addr) {
@@ -116,3 +116,4 @@ void mem_print_data(const Processor *p) {
             printf("0x%04X: 0x%02X\n", i, p->data_mem[i]);
     }
 }
+

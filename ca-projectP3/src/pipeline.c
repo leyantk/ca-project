@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 
-static void update_flags(Processor *p, uint8_t result, uint8_t op1, uint8_t op2, uint8_t op) {
+static void update_flags(Processor *p, uint8_t result, uint8_t val1, uint8_t val2, uint8_t op) {
   p->SREG = 0;
   if (result == 0) {
     p->SREG |= FLAG_Z;
@@ -13,17 +13,17 @@ static void update_flags(Processor *p, uint8_t result, uint8_t op1, uint8_t op2,
     p->SREG |= FLAG_N;
   }
 
-  if (op == 0b0000 || op == 0b0001) {
+  if (op == 0b0000 || op == 0b0001) {// add or subtract
     uint16_t temp;
     if (op == 0b0000){
-        temp = (uint16_t)op1 + op2;
+        temp = (uint16_t)val1 + val2;
     } else{
-        temp = (uint16_t)((int8_t)op1 - (int8_t)op2);
+        temp = (uint16_t)((int8_t)val1 - (int8_t)val2);
     }
       if (temp & 0x100){ 
         p->SREG |= FLAG_C;
       }
-      uint8_t ovf = ((op1 ^ result) & (op2 ^ result)) >> 7;
+      uint8_t ovf = ((val1 ^ result) & (val2 ^ result)) >> 7;
       if (ovf) {
         p->SREG |= FLAG_V;
       }
@@ -32,6 +32,12 @@ static void update_flags(Processor *p, uint8_t result, uint8_t op1, uint8_t op2,
        }
   }
 }
+// carry add 
+// ovf add & sub
+// negative  ADD, SUB, MUL, ANDI, EOR, SAL, and SAR
+//sign ADD and SUB instruction.
+//zero ADD, SUB, MUL, ANDI, EOR, SAL, and SAR 
+
 void fetch(Processor *p) {
   if (p->PC < 1024) {
       uint16_t instruction = p->instr_mem[p->PC];
@@ -64,8 +70,8 @@ void decode(Processor *p) {
         E.imm=0;
         E.rt = (int16_t)((int8_t)(instruction & 0x3F));
     }
-    E.valueRS = p->R[E.rs];
-    E.valueRT = p->R[E.rt];
+    E.valueRS = p->Register[E.rs];
+    E.valueRT = p->Register[E.rt];
     E.valid   = true;
     p->ID_EX = E;
     p->IF_ID.valid = false;
@@ -75,48 +81,66 @@ void execute(Processor *p) {
   if (!p->ID_EX.valid) {
     return;
   }
+
   uint8_t opcode = p->ID_EX.opcode;
   uint8_t rs = p->ID_EX.rs;
   uint8_t rt = p->ID_EX.rt;
   int8_t immediate = p->ID_EX.imm;
   uint8_t val1 = p->ID_EX.valueRS;
-  uint8_t val2 = (opcode <= 0b0010 || opcode == 0b0110 || opcode == 0b0111) ? p->ID_EX.valueRT : immediate;
+  uint8_t val2 = (opcode <= 0b0010 || opcode == 0b0110 || opcode == 0b0111) ? p->ID_EX.valueRT : immediate;// law rtype rt else imm
   uint8_t result = 0;
+
+  bool flag = false;
+
   switch (opcode) {
-      case 0b0000: result = val1 + val2; break;
-      case 0b0001: result = val1 - val2; break;
-      case 0b0010: result = val1 * val2; break;
-      case 0b0011: result = immediate; break;
-      case 0b0101: result = val1 & val2; break;
-      case 0b0110: result = val1 ^ val2; break;
-      case 0b1000: result = val1 << val2; break;
-      case 0b1001: result = ((int8_t)val1) >> val2; break;
-      case 0b1010: result = mem_read_data(p, immediate); break;
-      case 0b1011: mem_write_data(p, immediate, p->R[rs]); goto skipwrite;
-      case 0b0100:
-          if (p->R[rs] == 0) {
+      case 0b0000: result = val1 + val2; break;               // ADD R1 R2
+      case 0b0001: result = val1 - val2; break;               // SUB R1 R2
+      case 0b0010: result = val1 * val2; break;               // MUL R1 R2
+      case 0b0011: result = immediate; break;                 // MOVI R1 IMM
+      case 0b0101: result = val1 & val2; break;               // ANDI R1 IMM
+      case 0b0110: result = val1 ^ val2; break;               // EOR R1  R2
+      case 0b1000: result = val1 << val2; break;              // SAL R1 R2
+      case 0b1001: result = ((int8_t)val1) >> val2; break;    // SAR R1 R2
+      case 0b1010: result = mem_read_data(p, immediate); break; // LDR R1 IMM
+
+      case 0b1011:  // STR R1 IMM
+          mem_write_data(p, immediate, p->Register[rs]);
+          flag = true;
+          break;
+
+      case 0b0100:  // BEQZ R1 IMM
+          if (p->Register[rs] == 0) {
               p->PC = p->ID_EX.pc + 1 + immediate;
               p->IF_ID.valid = false;
               p->ID_EX.valid = false;
               return;
           }
-          goto skipwrite;
-      case 0b0111:
-          p->PC = ((uint16_t)p->R[rs] << 8) | p->R[rt];
+          flag = true;
+          break;
+
+      case 0b0111:  // BR R1 R2
+          p->PC = ((uint16_t)p->Register[rs] << 8) | p->Register[rt];
           p->IF_ID.valid = false;
           p->ID_EX.valid = false;
           return;
-      default: break;
+
+      default:
+          flag = true;
+          break;
   }
-  if (rs != 0) {
-      p->R[rs] = result;
-  }
-  update_flags(p, result, val1, val2, opcode);
-skipwrite:
+
+  if (!flag) {
+      if (rs != 0) {
+          p->Register[rs] = result;
+      }
+      update_flags(p, result, val1, val2, opcode);
+  }// 34an mayekteb4 f R0
+
   p->ID_EX.valid = false;
 }
 
-void processa_cycle(Processor *p) {
+
+void process_cycle(Processor *p) {
    
     p->EX_instr = p->ID_EX.instr;
     p->EX_pc    = p->ID_EX.pc;
@@ -130,17 +154,17 @@ void processa_cycle(Processor *p) {
 
 void print_registers(const Processor *p) {
     printf("Registers:\n");
-    int mawgood = 0;
+    int m = 0;
     for (int i = 0; i < 64; i++) {
-        printf("R%02d: 0x%02X  ", i, p->R[i]);
-        if (p->R[i] && i != 0) {
-            mawgood = 1;
+        printf("R%02d: 0x%02X  ", i, p->Register[i]);
+        if (p->Register[i] && i != 0) {
+            m = 1;
         }
         if ((i & 7) == 7) {
             printf("\n");
         }
     }
-    if (!mawgood) {
+    if (!m) {
         printf("(all zero except R0)\n");
     }
     printf("SREG: [%c%c%c%c%c]\n",
