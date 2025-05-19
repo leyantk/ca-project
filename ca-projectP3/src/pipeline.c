@@ -74,8 +74,12 @@ void decode(Processor *p) {
     E.rs      = (instruction >> 6) & 0x3F;
  
     if (E.opcode == 3 || E.opcode == 4 || E.opcode == 5 || E.opcode == 10 || E.opcode == 11 ||E.opcode == 8 ||E.opcode == 9) {
-        E.imm = (short int)((int8_t)(instruction & 0x3F));
-        E.rt=0;
+       int imm6 = instruction & 0x3F;
+        // Sign-extend to 32 bits
+
+       E.imm = (short int)(int8_t)imm6;
+       E.rt=0;
+
     } else {
         E.imm=0;
         E.rt = (short int)((int8_t)(instruction & 0x3F));
@@ -97,7 +101,12 @@ void execute(Processor *p) {
   int8_t opcode = p->ID_EX.opcode;
   int8_t rs = p->ID_EX.rs;
   int8_t rt = p->ID_EX.rt;
-  int8_t immediate = p->ID_EX.imm;
+  int imm6 = p->ID_EX.imm;
+       if (imm6 & 0x20)  // If sign bit (bit 5) is set
+          imm6 |= 0xFFFFFFC0;  // Sign-extend to 32 bits
+
+  short int immediate = (int8_t)imm6;
+ 
   int8_t val1 = p->ID_EX.valueRS;
   int8_t val2 = (opcode <= 0b0010 || opcode == 0b0110 || opcode == 0b0111) ? p->ID_EX.valueRT : immediate;// law rtype rt else imm
   int8_t result = 0;

@@ -49,7 +49,7 @@ typedef struct {
 void proc_init(Processor *p);
 void mem_init(Processor *p);
 void mem_load_program(Processor *p, const char *filename);
-uint8_t mem_read_data(Processor *p, short int addr);
+int8_t mem_read_data(Processor *p, short int addr);
 void mem_write_data(Processor *p, short int addr, int8_t data);
 void mem_print_instr(const Processor *p);
 void mem_print_data(const Processor *p);

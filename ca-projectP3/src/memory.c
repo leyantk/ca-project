@@ -68,16 +68,9 @@ void mem_load_program(Processor *p, const char *filename) {
             }
 
             if (opcode == 3 || opcode == 4 || opcode == 5 || opcode == 10 || opcode == 11 ||opcode == 8 ||opcode == 9 ) {
-                // Make sure immediate fits in signed 6-bit range [-32, 31]
-if (imm < -32 || imm > 31) {
-    fprintf(stderr, "Immediate value %d out of 6-bit signed range in line: %s", imm, line);
-    exit(EXIT_FAILURE);
-}
+                
 
-// Convert signed imm into 6-bit two's complement
-uint8_t imm6 = imm & 0x3F;
-
-instruction = (opcode << 12) | ((rs & 0x3F) << 6) | imm6;
+instruction = (opcode << 12) | ((rs & 0x3F) << 6) | imm;
 
             } else {
                 instruction = (opcode << 12) | ((rs & 0x3F) << 6) |(rt & 0x3F);
@@ -134,4 +127,3 @@ void mem_print_data(const Processor *p) {
             printf("0x%04X: 0x%02X\n", i, p->data_mem[i]);
     }
 }
-
