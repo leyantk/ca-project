@@ -45,6 +45,10 @@ static void update_flags(Processor *p, int8_t result, int8_t val1, int8_t val2, 
 //zero ADD, SUB, MUL, ANDI, EOR, SAL, and SAR 
 
 void fetch(Processor *p) {
+    if (p->branchTaken) {
+        p->branchTaken = false; 
+        return;
+    }
   if (p->PC < 1024) {
       short int instruction = p->instr_mem[p->PC];
       if (instruction == 0) {
@@ -130,6 +134,7 @@ if (p->EX_valid && p->ID_EX.rt == ((p->EX_instr >> 6) & 0x3F) && p->ID_EX.opcode
               p->PC = p->ID_EX.pc + 1 + immediate;
               p->IF_ID.valid = false;
               p->ID_EX.valid = false;
+              p->branchTaken = true;
               return;
           }
           flag = true;
@@ -139,8 +144,10 @@ if (p->EX_valid && p->ID_EX.rt == ((p->EX_instr >> 6) & 0x3F) && p->ID_EX.opcode
           p->PC = ((short int)p->Register[rs] << 8) | p->Register[rt];
           p->IF_ID.valid = false;
           p->ID_EX.valid = false;
-          return;
+          p->branchTaken = true;
 
+          return;break;
+         
       default:
           flag = true;
           break;

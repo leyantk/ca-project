@@ -8,6 +8,8 @@ void proc_init(Processor *p) {
     p->PC = 0; 
     p->IF_ID.valid = false;
     p->ID_EX.valid = false;
+    p->branchTaken = false;
+
 }
 
 

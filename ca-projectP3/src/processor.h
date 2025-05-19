@@ -33,6 +33,8 @@ typedef struct {
     int8_t      Register[64];
     int8_t      SREG;
     short int     PC;
+    bool    branchTaken;
+
 
     short int     instr_mem[1024];
     int8_t      data_mem[2048];
