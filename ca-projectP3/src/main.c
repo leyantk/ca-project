@@ -11,18 +11,18 @@ int main() {
 
     printf("===== Simulation Start =====\n");
 
-    bool isrunning = true;
-    int cyclescounter = 0;
+    bool running = true;
+    int cycles = 0;
 
-    while (isrunning) {
+    while (running) {
         process_cycle(&cpu);
         if(!cpu.EX_valid && !cpu.IF_ID.valid && !cpu.ID_EX.valid && cpu.PC>=1024 ){
             break;
         }
         else{
-              print_pipeline(&cpu, ++cyclescounter);
+              print_pipeline(&cpu, ++cycles);
         }
-        isrunning = cpu.IF_ID.valid || cpu.ID_EX.valid || cpu.EX_valid || cpu.PC < 1024;
+        running = cpu.IF_ID.valid || cpu.ID_EX.valid || cpu.EX_valid || cpu.PC < 1024;
     }
 
     printf("\n===== Final Registers =====\n");
