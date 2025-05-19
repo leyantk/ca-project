@@ -91,6 +91,14 @@ void execute(Processor *p) {
   uint8_t result = 0;
 
   bool flag = false;
+ 
+if (p->EX_valid && p->ID_EX.rs == ((p->EX_instr >> 6) & 0x3F)) {
+    val1 = p->Register[p->ID_EX.rs]; 
+}
+
+if (p->EX_valid && p->ID_EX.rt == ((p->EX_instr >> 6) & 0x3F) && p->ID_EX.opcode <= 2) {
+    val2 = p->Register[p->ID_EX.rt];
+}
 
   switch (opcode) {
       case 0b0000: result = val1 + val2; break;               // ADD R1 R2
