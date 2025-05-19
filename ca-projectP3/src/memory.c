@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 
 void mem_init(Processor *p) {
@@ -18,7 +19,7 @@ void mem_load_program(Processor *p, const char *filename) {
     printf("Opening file: %s\n", filename);
 
     char line[128];
-    uint16_t addr = 0; 
+    short int  addr = 0; 
 
     while (fgets(line, sizeof(line), file) && addr < 0x0400) {
         if (line[0] == '\n' || line[0] == ';' || line[0] == '#') continue;
@@ -27,14 +28,14 @@ void mem_load_program(Processor *p, const char *filename) {
         int r1 = 0;
         int r2 = 0;
         int value = 0;
-        uint16_t opcode = 0;
-        uint16_t rs = 0;
-        uint16_t rt = 0;
-        uint16_t imm = 0;
-        uint16_t instruction = 0;
+        int8_t  opcode = 0;
+        short int rs = 0;
+        short int rt = 0;
+        short int imm = 0;
+        short int instruction = 0;
          if (sscanf(line, "%s R%d R%d", op, &r1, &r2) == 3) {
-            rs = (uint8_t)r1;
-            rt = (uint8_t)r2;
+            rs = (int8_t)r1;
+            rt = (int8_t)r2;
             
 
             if      (strcmp(op, "ADD") == 0) opcode = 0;
@@ -51,8 +52,8 @@ void mem_load_program(Processor *p, const char *filename) {
             p->instr_mem[addr++] = instruction;
 
         } else if (sscanf(line, "%s R%d %d", op, &r1, &value) == 3) {
-            rs = (uint8_t)r1;
-            imm = (uint8_t)value;
+            rs = (int8_t)r1;
+            imm = (int8_t)value;
 
             if      (strcmp(op, "MOVI") == 0) opcode = 3;
             else if (strcmp(op, "BEQZ") == 0) opcode = 4;
@@ -85,26 +86,33 @@ void mem_load_program(Processor *p, const char *filename) {
 
 }
 
-uint8_t mem_read_data(Processor *p, uint16_t addr) {
+uint8_t mem_read_data(Processor *p, short int addr) {
     if (addr >= 2048) return 0;
     return p->data_mem[addr];
 }
 
-void mem_write_data(Processor *p, uint16_t addr, uint8_t data) {
+void mem_write_data(Processor *p, short int addr, int8_t data) {
     if (addr >= 2048) return;
     p->data_mem[addr] = data;
-    printf("[EX] Memory[0x%04X] updated to 0x%02X\n", addr, data);
+
 }
 
 void mem_print_instr(const Processor *p) {
     printf("Instruction Memory:\n");
     for (int i = 0; i < 1024; i++) {
         if (p->instr_mem[i]) {
-            uint16_t instruction = p->instr_mem[i];
-            uint8_t opcode = (instruction >> 12) & 0x0F;
-            uint8_t rs = (instruction >> 6) & 0x3F;
-            uint8_t rt = instruction & 0x3F;
-            printf("0x%04X: 0x%04X (opcode=%d, rs=%d, rt=%d)\n", i, instruction, opcode, rs, rt);
+           short int instruction = p->instr_mem[i];
+            int8_t opcode = (instruction >> 12) & 0x0F;
+            int8_t rs = (instruction >> 6) & 0x3F;
+            int8_t rt = instruction & 0x3F;
+           
+            if(opcode == 3 || opcode == 4 || opcode == 5 || opcode == 10 || opcode == 11 ||opcode == 8 ||opcode == 9 ) {
+            printf("0x%04X: 0x%04X (opcode=%d, rs=R%d, imm=%d)\n", i, instruction, opcode, rs, rt);
+            }
+            else{
+                 printf("0x%04X: 0x%04X (opcode=%d, rs=R%d, rt=R%d)\n", i, instruction, opcode, rs, rt);
+            }
+
         }
     }
 }

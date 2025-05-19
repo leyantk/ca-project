@@ -1,6 +1,7 @@
 #include "processor.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 
 void proc_init(Processor *p) {
     memset(p, 0, sizeof(Processor));

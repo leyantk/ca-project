@@ -2,9 +2,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
+char reg_update[64] = "-";// to store registers updated after each execute in each clock cycle(instruction)
+char mem_update[64] = "-";
 
 
-static void update_flags(Processor *p, uint8_t result, uint8_t val1, uint8_t val2, uint8_t op) {
+static void update_flags(Processor *p, int8_t result, int8_t val1, int8_t val2, int8_t op) {
   p->SREG = 0;
   if (result == 0) {
     p->SREG |= FLAG_Z;
@@ -14,16 +17,19 @@ static void update_flags(Processor *p, uint8_t result, uint8_t val1, uint8_t val
   }
 
   if (op == 0b0000 || op == 0b0001) {// add or subtract
-    uint16_t temp;
+    short int temp;
     if (op == 0b0000){
-        temp = (uint16_t)val1 + val2;
-    } else{
-        temp = (uint16_t)((int8_t)val1 - (int8_t)val2);
-    }
-      if (temp & 0x100){ 
+        temp = (short int)val1 + val2;
+         if (temp & 0x100){ 
         p->SREG |= FLAG_C;
       }
-      uint8_t ovf = ((val1 ^ result) & (val2 ^ result)) >> 7;
+       
+    } //else{
+        //temp = (uint16_t)((int8_t)val1 - (int8_t)val2);
+   // }
+    
+      
+      int8_t ovf = ((val1 ^ result) & (val2 ^ result)) >> 7;
       if (ovf) {
         p->SREG |= FLAG_V;
       }
@@ -40,7 +46,7 @@ static void update_flags(Processor *p, uint8_t result, uint8_t val1, uint8_t val
 
 void fetch(Processor *p) {
   if (p->PC < 1024) {
-      uint16_t instruction = p->instr_mem[p->PC];
+      short int instruction = p->instr_mem[p->PC];
       if (instruction == 0) {
           p->PC = 1024;
           return;
@@ -56,7 +62,7 @@ void decode(Processor *p) {
     if (!p->IF_ID.valid) {
         return;
     }
-    uint16_t instruction = p->IF_ID.instr;
+    short int instruction = p->IF_ID.instr;
     ID_EX_Reg E = {0};
     E.instr   = instruction;
     E.pc      = p->IF_ID.pc;
@@ -64,11 +70,11 @@ void decode(Processor *p) {
     E.rs      = (instruction >> 6) & 0x3F;
  
     if (E.opcode == 3 || E.opcode == 4 || E.opcode == 5 || E.opcode == 10 || E.opcode == 11 ||E.opcode == 8 ||E.opcode == 9) {
-        E.imm = (int16_t)((int8_t)(instruction & 0x3F));
+        E.imm = (short int)((int8_t)(instruction & 0x3F));
         E.rt=0;
     } else {
         E.imm=0;
-        E.rt = (int16_t)((int8_t)(instruction & 0x3F));
+        E.rt = (short int)((int8_t)(instruction & 0x3F));
     }
     E.valueRS = p->Register[E.rs];
     E.valueRT = p->Register[E.rt];
@@ -78,17 +84,19 @@ void decode(Processor *p) {
 }
 
 void execute(Processor *p) {
+  strcpy(reg_update, "-");
+  strcpy(mem_update, "-");
   if (!p->ID_EX.valid) {
     return;
   }
 
-  uint8_t opcode = p->ID_EX.opcode;
-  uint8_t rs = p->ID_EX.rs;
-  uint8_t rt = p->ID_EX.rt;
+  int8_t opcode = p->ID_EX.opcode;
+  int8_t rs = p->ID_EX.rs;
+  int8_t rt = p->ID_EX.rt;
   int8_t immediate = p->ID_EX.imm;
-  uint8_t val1 = p->ID_EX.valueRS;
-  uint8_t val2 = (opcode <= 0b0010 || opcode == 0b0110 || opcode == 0b0111) ? p->ID_EX.valueRT : immediate;// law rtype rt else imm
-  uint8_t result = 0;
+  int8_t val1 = p->ID_EX.valueRS;
+  int8_t val2 = (opcode <= 0b0010 || opcode == 0b0110 || opcode == 0b0111) ? p->ID_EX.valueRT : immediate;// law rtype rt else imm
+  int8_t result = 0;
 
   bool flag = false;
  
@@ -113,6 +121,7 @@ if (p->EX_valid && p->ID_EX.rt == ((p->EX_instr >> 6) & 0x3F) && p->ID_EX.opcode
 
       case 0b1011:  // STR R1 IMM
           mem_write_data(p, immediate, p->Register[rs]);
+          snprintf(mem_update, sizeof(mem_update), "Memory[0x%04X] = 0x%02X", immediate, p->Register[rs]);
           flag = true;
           break;
 
@@ -127,7 +136,7 @@ if (p->EX_valid && p->ID_EX.rt == ((p->EX_instr >> 6) & 0x3F) && p->ID_EX.opcode
           break;
 
       case 0b0111:  // BR R1 R2
-          p->PC = ((uint16_t)p->Register[rs] << 8) | p->Register[rt];
+          p->PC = ((short int)p->Register[rs] << 8) | p->Register[rt];
           p->IF_ID.valid = false;
           p->ID_EX.valid = false;
           return;
@@ -140,8 +149,11 @@ if (p->EX_valid && p->ID_EX.rt == ((p->EX_instr >> 6) & 0x3F) && p->ID_EX.opcode
   if (!flag) {
       if (rs != 0) {
           p->Register[rs] = result;
+         snprintf(reg_update, sizeof(reg_update), "R%d updated to 0x%02X", rs, result);
       }
+      if(opcode!=3 || opcode!=4 || opcode!=7 || opcode!=10 || opcode!=11){
       update_flags(p, result, val1, val2, opcode);
+      }
   }// 34an mayekteb4 f R0
 
   p->ID_EX.valid = false;
@@ -205,10 +217,32 @@ void print_pipeline(const Processor *p, int cycle) {
     else
         sprintf(id_buffer, "-");
   
-    if (p->EX_valid)
-        sprintf(ex_buffer, "Instruction %d (PC=%d)", p->EX_pc + 1, p->EX_pc);
+    if (p->EX_valid){
+         short int instr = p->EX_instr;
+        int8_t opcode = (instr >> 12) & 0x0F;
+        int8_t rs = (instr >> 6) & 0x3F;
+        int8_t valRS=( uint8_t)p->Register[rs];
+        int8_t val2 = (short int)((int8_t)(instr& 0x3F));
+        if ( opcode == 3 ||  opcode== 4 ||  opcode == 5 || opcode== 10 || opcode == 11 || opcode == 8 || opcode== 9) {
+              sprintf(ex_buffer, "Instruction %d (PC=%d, opcode=%d, rs=R%d=%d, imm=%d)", 
+                p->EX_pc + 1, p->EX_pc, opcode, rs,valRS, val2);
+        }
+        else{
+            sprintf(ex_buffer, "Instruction %d (PC=%d, opcode=%d, rs=R%d=%d, rt=R%d=%d)", 
+                p->EX_pc + 1, p->EX_pc, opcode, rs,valRS, val2,p->Register[val2]);
+        }
+
+        }
+   
     else
         sprintf(ex_buffer, "-");
+
     printf("| %-30s | %-60s | %-30s |\n", if_buffer, id_buffer, ex_buffer);
+    if (strcmp(reg_update, "-") != 0)
+        printf("[REG UPDATE] %s\n", reg_update);
+    if (strcmp(mem_update, "-") != 0)
+        printf("[MEM UPDATE] %s\n", mem_update);
+
+   
 }
 
